@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Gem {
+  id           String   @id @default(uuid())
+  name         String
+  instructions String
+  files        String   // JSON string of GemFile[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  schedules    Schedule[]
+}
+
+model Schedule {
+  id              String   @id @default(uuid())
+  gemId           String
+  gem             Gem      @relation(fields: [gemId], references: [id], onDelete: Cascade)
+  type            String   // 'interval' | 'daily'
+  intervalMinutes Int?
+  dailyTimes      String?  // JSON string of string[]
+  dailyTime       String?  // Legacy support
+  timezone        String?  @default("America/New_York")
+  lastRun         BigInt?  // Timestamp
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SocialAccount {
+  id        String   @id @default(uuid())
+  platform  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     String   // JSON string
+  updatedAt DateTime @updatedAt
+}
