@@ -16,35 +16,29 @@ export async function POST(req: Request) {
             );
         }
 
-        // Save file temporarily
+        // Save file locally to public/uploads
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        
-        // Create a unique filename in temp directory
-        const tempFilePath = join(tmpdir(), `gemini-upload-${Date.now()}-${file.name}`);
-        await writeFile(tempFilePath, buffer);
 
-        try {
-            // Upload to Gemini
-            const geminiFile = await uploadFile(tempFilePath, file.type, file.name);
+        // Ensure unique filename
+        const filename = `gemini-upload-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+        const uploadDir = join(process.cwd(), "public", "uploads");
 
-            // Clean up temp file
-            await unlink(tempFilePath);
+        // Ensure directory exists (fs/promises mkdir is recursive by default in Node 10+, but let's be safe)
+        const { mkdir } = require("fs/promises");
+        await mkdir(uploadDir, { recursive: true });
 
-            return NextResponse.json({
-                uri: geminiFile.uri,
-                name: geminiFile.displayName,
-                mimeType: geminiFile.mimeType
-            });
-        } catch (uploadError: any) {
-            // Ensure temp file is cleaned up even if upload fails
-            try {
-                await unlink(tempFilePath);
-            } catch (e) {
-                console.error("Failed to delete temp file:", e);
-            }
-            throw uploadError;
-        }
+        const filePath = join(uploadDir, filename);
+        await writeFile(filePath, buffer);
+
+        // Return the public URI
+        const publicUri = `/uploads/${filename}`;
+
+        return NextResponse.json({
+            uri: publicUri,
+            name: file.name,
+            mimeType: file.type
+        });
 
     } catch (error: any) {
         console.error("Upload Error:", error);

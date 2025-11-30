@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const accounts = await prisma.socialAccount.findMany({
+            where: { userId: session.user.id },
             orderBy: { createdAt: "desc" },
         });
         return NextResponse.json(accounts);
@@ -17,6 +26,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const body = await req.json();
         const { platform, name } = body;
 
@@ -28,6 +42,7 @@ export async function POST(req: Request) {
             data: {
                 platform,
                 name,
+                userId: session.user.id,
             },
         });
 

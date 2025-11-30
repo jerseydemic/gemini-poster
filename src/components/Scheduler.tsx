@@ -61,9 +61,9 @@ export function Scheduler() {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                                text: genData.caption,
+                                caption: genData.caption,
                                 imageUrl: genData.imageUrl,
-                                platforms: { twitter: true } // Default to Twitter for now
+                                platforms: ["twitter"] // Default to Twitter for now
                             })
                         });
 

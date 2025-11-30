@@ -2,8 +2,16 @@ import { NextResponse } from "next/server";
 import { postTweet } from "@/lib/twitter";
 import { postFacebook } from "@/lib/facebook";
 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { caption, imageUrl, platforms, accounts } = await req.json();
 
     if (!caption) {

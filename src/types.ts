@@ -9,6 +9,7 @@ export interface Gem {
     name: string;
     instructions: string;
     files: GemFile[];
+    userId?: string;
 }
 
 export type SocialPlatform = 'twitter' | 'facebook';
@@ -22,6 +23,7 @@ export interface SocialAccount {
     recipientId?: never;
     // Twitter specific (placeholder for now, could be API keys override)
     // apiKey?: string;
+    userId?: string;
 }
 
 export interface ScheduledJob {

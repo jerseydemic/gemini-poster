@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { generateText, generateImagePrompt, generateImage } from "@/lib/gemini";
 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
 export async function POST(req: Request) {
     try {
-        const { instructions, files } = await req.json();
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { instructions, files, includeImage } = await req.json();
 
         if (!instructions) {
             return NextResponse.json(
@@ -16,20 +24,25 @@ export async function POST(req: Request) {
         const captionPrompt = "Generate a social media caption based on the system instructions. Keep it engaging and suitable for Twitter (X). Include hashtags. CRITICAL: Return ONLY the caption text. Do NOT include conversational filler like 'Here we go' or 'Sure'. Do NOT include quotes around the caption.";
         const caption = await generateText(instructions, captionPrompt, files || []);
 
-        // 2. Generate Image Prompt
-        const imagePrompt = await generateImagePrompt(caption);
+        let imagePrompt = null;
+        let imageUrl = null;
 
-        // 3. Generate Image
-        let imageUrl;
-        try {
-            imageUrl = await generateImage(imagePrompt);
-        } catch (imgError) {
-            console.error("Image Generation Failed:", imgError);
-            // Fallback or just log, but for now we want to see the error if it fails
-            throw imgError;
+        if (includeImage) {
+            // 2. Generate Image Prompt
+            imagePrompt = await generateImagePrompt(caption, files || []);
+
+            // 3. Generate Image
+            try {
+                imageUrl = await generateImage(imagePrompt);
+            } catch (imgError) {
+                console.error("Image Generation Failed:", imgError);
+                // Fallback or just log, but for now we want to see the error if it fails
+                throw imgError;
+            }
         }
 
         return NextResponse.json({
+            success: true,
             caption,
             imagePrompt,
             imageUrl
